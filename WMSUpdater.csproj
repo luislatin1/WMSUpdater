@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+
+    <!-- SINGLE FILE -->
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <!-- IMPORTANTE PARA WPF -->
+    <IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
+
+    <!-- NO TRIM -->
+    <PublishTrimmed>false</PublishTrimmed>
+
+	<!-- ICONO DEL EXE -->
+	<ApplicationIcon>Assets\appv2.ico</ApplicationIcon>
+	  
+    <!-- OPTIMIZACIÓN -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+	<!-- ICONO COMO RECURSO WPF -->
+	<ItemGroup>
+		<Resource Include="Assets\appv2.ico" />
+	</ItemGroup>
+
+</Project>
