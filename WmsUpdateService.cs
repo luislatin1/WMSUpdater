@@ -15,91 +15,104 @@ namespace WMSUpdater
 
         public string ExeName => "WMS_v2.exe";
 
+        public string WmsExePath =>
+            Path.Combine(TargetPath, ExeName);
+
         public async Task UpdateAsync(
-    Action<string> log,
-    Action<int> progress)
-{
-    log("Verificando si WMS está en ejecución...");
-    CloseIfRunning(log);
-
-    log("Preparando carpeta destino...");
-    Directory.CreateDirectory(TargetPath);
-
-    log("Analizando archivos...");
-    var files = Directory.GetFiles(SourcePath, "*", SearchOption.AllDirectories);
-
-    int totalFiles = files.Length;
-    int copiedFiles = 0;
-
-    log($"Archivos a copiar: {totalFiles}");
-
-    await Task.Run(() =>
-    {
-        foreach (var file in files)
+            Action<string> log,
+            Action<int> progress)
         {
-            var relativePath = file.Substring(SourcePath.Length + 1);
-            var destinationFile = Path.Combine(TargetPath, relativePath);
+            log("Verificando si WMS está en ejecución...");
+            CloseIfRunning(log);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
-            File.Copy(file, destinationFile, true);
+            log("Preparando carpeta destino...");
+            Directory.CreateDirectory(TargetPath);
 
-            copiedFiles++;
-            int percent = (int)((copiedFiles / (double)totalFiles) * 100);
+            log("Analizando archivos...");
+            var files = Directory.GetFiles(SourcePath, "*", SearchOption.AllDirectories);
 
-            progress(percent);
+            int totalFiles = files.Length;
+            int copiedFiles = 0;
+
+            log($"Archivos a copiar: {totalFiles}");
+
+            await Task.Run(() =>
+            {
+                foreach (var file in files)
+                {
+                    var relativePath = file.Substring(SourcePath.Length + 1);
+                    var destinationFile = Path.Combine(TargetPath, relativePath);
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(destinationFile)!);
+                    File.Copy(file, destinationFile, true);
+
+                    copiedFiles++;
+                    int percent = (int)((copiedFiles / (double)totalFiles) * 100);
+
+                    progress(percent);
+                }
+            });
+
+            log("Actualización finalizada.");
+
+            LaunchWms(log);
         }
-    });
-
-    log("Actualización finalizada.");
-}
-
 
         private void CloseIfRunning(Action<string> log)
-{
-    var processes = Process.GetProcessesByName(
-        Path.GetFileNameWithoutExtension(ExeName));
-
-    if (processes.Length == 0)
-    {
-        log("WMS no está en ejecución.");
-        return;
-    }
-
-    foreach (var process in processes)
-    {
-        try
         {
-            log($"Solicitando cierre de {process.ProcessName}...");
-            process.CloseMainWindow();
+            var processes = Process.GetProcessesByName(
+                Path.GetFileNameWithoutExtension(ExeName));
 
-            if (!process.WaitForExit(5000))
+            if (processes.Length == 0)
             {
-                log("No respondió, forzando cierre...");
-                process.Kill(true);
-                process.WaitForExit();
+                log("WMS no está en ejecución.");
+                return;
             }
 
-            log("Proceso cerrado correctamente.");
-        }
-        catch (Exception ex)
-        {
-            log("Error al cerrar proceso: " + ex.Message);
-        }
-    }
-}
-
-
-        private void CopyDirectory(string source, string target)
-        {
-            foreach (var dir in Directory.GetDirectories(source, "*", SearchOption.AllDirectories))
+            foreach (var process in processes)
             {
-                Directory.CreateDirectory(dir.Replace(source, target));
+                try
+                {
+                    log($"Solicitando cierre de {process.ProcessName}...");
+                    process.CloseMainWindow();
+
+                    if (!process.WaitForExit(5000))
+                    {
+                        log("No respondió, forzando cierre...");
+                        process.Kill(true);
+                        process.WaitForExit();
+                    }
+
+                    log("Proceso cerrado correctamente.");
+                }
+                catch (Exception ex)
+                {
+                    log("Error al cerrar proceso: " + ex.Message);
+                }
+            }
+        }
+
+        private void LaunchWms(Action<string> log)
+        {
+            if (!File.Exists(WmsExePath))
+            {
+                log("⚠ No se encontró WMS_v2.exe para ejecutar.");
+                return;
             }
 
-            foreach (var file in Directory.GetFiles(source, "*.*", SearchOption.AllDirectories))
+            try
             {
-                var dest = file.Replace(source, target);
-                File.Copy(file, dest, true);
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = WmsExePath,
+                    UseShellExecute = true
+                });
+
+                log("🚀 WMS iniciado correctamente.");
+            }
+            catch (Exception ex)
+            {
+                log("❌ Error al iniciar WMS:" + ex.Message);
             }
         }
     }
